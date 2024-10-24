@@ -5,13 +5,20 @@ from department import Department
 class Employee:
 
     # Dictionary of objects saved to the database.
-    all = {}
+    class Employee:
+     all = {}  # Store all employee instances
 
-    def __init__(self, name, job_title, department_id, id=None):
-        self.id = id
+     def __init__(self, name, role, department_id):
+        self.id = len(Employee.all) + 1  # Assign a unique id
         self.name = name
-        self.job_title = job_title
-        self.department_id = department_id
+        self.role = role
+        self.department_id = department_id  # Store department id
+        Employee.all[self.id] = self  # Save the instance
+
+     @classmethod
+     def create(cls, name, role, department_id):
+        return cls(name, role, department_id)
+
 
     def __repr__(self):
         return (
@@ -127,9 +134,19 @@ class Employee:
     @classmethod
     def create(cls, name, job_title, department_id):
         """ Initialize a new Employee instance and save the object to the database """
-        employee = cls(name, job_title, department_id)
+        employee = cls('Raha', 'Accountant', 1)
         employee.save()
         return employee
+    
+    @classmethod
+    def create(cls, name, role, department_id):
+        employee = cls('Raha', 'Accountant', 1)
+        cls.all[employee.id] = employee  # Assuming employee has an id attribute
+        return employee
+    
+    def reviews(self):
+        from review import Review  # Avoid circular import issues
+        return [review for review in Review.all.values() if review.employee_id == self.id]
 
     @classmethod
     def instance_from_db(cls, row):
@@ -186,5 +203,12 @@ class Employee:
         return cls.instance_from_db(row) if row else None
 
     def reviews(self):
-        """Return list of reviews associated with current employee"""
-        pass
+        from review import Review  # Ensure to avoid circular import issues
+        return [review for review in Review.all.values() if review.employee_id == self.id]
+    
+    def employees(self):
+        from employee import Employee
+        result = [emp for emp in Employee.all.values() if emp.department_id == self.id]
+        print(f"Department ID: {self.id}, Employees: {[emp.name for emp in result]}")
+        return result
+

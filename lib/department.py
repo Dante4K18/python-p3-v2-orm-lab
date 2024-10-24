@@ -5,13 +5,22 @@ from __init__ import CURSOR, CONN
 class Department:
 
     # Dictionary of objects saved to the database.
-    all = {}
+    all = {}  # Store all department instances
 
-    def __init__(self, name, location, id=None):
-        self.id = id
+    def __init__(self, name, location):
+        self.id = len(Department.all) + 1  # Assign a unique id
         self.name = name
         self.location = location
+        Department.all[self.id] = self  # Save the instance
 
+    @classmethod
+    def create(cls, name, location):
+        return cls(name, location)
+
+    def employees(self):
+        from employee import Employee  # Import Employee to avoid circular import
+        # Return a list of employees associated with this department
+        return [emp for emp in Employee.all.values() if emp.department_id == self.id]
     def __repr__(self):
         return f"<Department {self.id}: {self.name}, {self.location}>"
 

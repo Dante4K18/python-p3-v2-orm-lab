@@ -283,8 +283,9 @@ class TestEmployee:
         
         Employee.create_table()
         employee1 = Employee.create("Raha", "Accountant", department1.id)
-        employee2 = Employee.create(
-            "Tal", "Senior Accountant", department1.id)
+        employee2 = Employee.create("Tal", "Senior Accountant", department1.id)
+        employee3 = Employee.create("Amir", "Manager", department1.id)
+
         
         Review.create_table()
         review1 = Review.create(2022, "Good Python coding skills", employee1.id)

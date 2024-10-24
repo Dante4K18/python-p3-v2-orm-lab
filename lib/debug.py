@@ -16,16 +16,23 @@ def reset_database():
     Employee.create_table()
     Review.create_table()
 
+def test_get_employees(self):
+    from employee import Employee  # Avoid circular import
+    Employee.all = {}  # Reset Employee records
+
+
     # Create seed data
-    payroll = Department.create("Payroll", "Building A, 5th Floor")
-    human_resources = Department.create(
-        "Human Resources", "Building C, East Wing")
-    employee1 = Employee.create("Lee", "Manager", payroll.id)
-    employee2 = Employee.create("Sasha", "Manager", human_resources.id)
+    department1 = Department.create("Payroll", "Building A, 5th Floor")
+    department2 = Department.create("Human Resources", "Building C, 2nd Floor")
+    employee1 = Employee.create("Raha", "Accountant", department1.id)
+    employee2 = Employee.create("Tal", "Senior Accountant", department1.id)
+    employee3 = Employee.create("Amir", "Manager", department2.id)
     Review.create(2023, "Efficient worker", employee1.id)
     Review.create(2022, "Good work ethic", employee1.id)
     Review.create(2023, "Excellent communication skills", employee2.id)
 
+    employees = department1.employees()
+    assert len(employees) == 2
 
 reset_database()
 ipdb.set_trace()
