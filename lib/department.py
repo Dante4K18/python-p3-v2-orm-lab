@@ -3,6 +3,22 @@ from __init__ import CURSOR, CONN
 
 
 class Department:
+    def employees(self):
+        """Return list of employees associated with the current department."""
+        from employee import Employee  # Avoid circular import
+
+        sql = """
+            SELECT * FROM employees
+            WHERE department_id = ?
+        """
+        CURSOR.execute(sql, (self.id,))
+        employee_rows = CURSOR.fetchall()
+
+        employees = [Employee(id=row[0], name=row[1], position=row[2], department_id=row[3])
+                    for row in employee_rows]
+        return employees
+
+
 
     # Dictionary of objects saved to the database.
     all = {}
@@ -165,16 +181,4 @@ class Department:
         row = CURSOR.execute(sql, (name,)).fetchone()
         return cls.instance_from_db(row) if row else None
 
-    def employees(self):
-        """Return list of employees associated with current department"""
-        from employee import Employee
-        sql = """
-            SELECT * FROM employees
-            WHERE department_id = ?
-        """
-        CURSOR.execute(sql, (self.id,),)
-
-        rows = CURSOR.fetchall()
-        return [
-            Employee.instance_from_db(row) for row in rows
-        ]
+    

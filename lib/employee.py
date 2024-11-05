@@ -1,12 +1,54 @@
 # lib/employee.py
 from __init__ import CURSOR, CONN
 from department import Department
+from lib.db import CURSOR
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
-class Employee:
 
-    # Dictionary of objects saved to the database.
+Base = declarative_base()
+
+
+class Employee(Base):
+    __tablename__ = 'employees'
+
+    id = Column (Integer, primary_key=True)
+    name = Column (String)
+
+    @classmethod
+    def create_table(cls, session):
+        cls.__table__.create(bind=session.bind, checkfirst=True)
+
+    @classmethod
+    def drop_table(cls, session):
+        cls.__table__.drop(bind=session.bind, checkfirst=True)
+
+     # Dictionary of objects saved to the database.
     all = {}
 
+    @classmethod
+    def create(cls, name, job_title, department_id):
+        # Code to create and insert a new Employee instance
+        employee = cls(None, name, job_title, department_id)
+        CURSOR.execute(
+            "INSERT INTO employees (name, job_title, department_id) VALUES (?, ?, ?)",
+            (name, job_title, department_id)
+        )
+        employee.id = CURSOR.lastrowid
+        return employee
+
+    @classmethod
+    def create(cls, session, name):
+        if not name:
+            raise ValueError("Name must be a non-empty string")
+        employee = cls(name=name)
+        session.add(employee)
+        session.commit()
+        return employee
+
+
+   
     def __init__(self, name, job_title, department_id, id=None):
         self.id = id
         self.name = name
@@ -34,7 +76,7 @@ class Employee:
 
     @property
     def job_title(self):
-        return self._job_title
+        return self.job_title
 
     @job_title.setter
     def job_title(self, job_title):
@@ -70,6 +112,9 @@ class Employee:
         """
         CURSOR.execute(sql)
         CONN.commit()
+        CURSOR.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        print(CURSOR.fetchall())  # This should list all tables, including 'employees' if it was created
+
 
     @classmethod
     def drop_table(cls):
@@ -95,41 +140,16 @@ class Employee:
         self.id = CURSOR.lastrowid
         type(self).all[self.id] = self
 
-    def update(self):
-        """Update the table row corresponding to the current Employee instance."""
-        sql = """
-            UPDATE employees
-            SET name = ?, job_title = ?, department_id = ?
-            WHERE id = ?
-        """
-        CURSOR.execute(sql, (self.name, self.job_title,
-                             self.department_id, self.id))
-        CONN.commit()
+    def update(self, session, name):
+        if not name:
+            raise ValueError("Name must be a non-empty string")
+        self.name = name
+        session.commit()
 
-    def delete(self):
-        """Delete the table row corresponding to the current Employee instance,
-        delete the dictionary entry, and reassign id attribute"""
+    def delete(self, session):
+        session.delete(self)
+        session.commit()
 
-        sql = """
-            DELETE FROM employees
-            WHERE id = ?
-        """
-
-        CURSOR.execute(sql, (self.id,))
-        CONN.commit()
-
-        # Delete the dictionary entry using id as the key
-        del type(self).all[self.id]
-
-        # Set the id to None
-        self.id = None
-
-    @classmethod
-    def create(cls, name, job_title, department_id):
-        """ Initialize a new Employee instance and save the object to the database """
-        employee = cls(name, job_title, department_id)
-        employee.save()
-        return employee
 
     @classmethod
     def instance_from_db(cls, row):
@@ -150,29 +170,16 @@ class Employee:
         return employee
 
     @classmethod
-    def get_all(cls):
-        """Return a list containing one Employee object per table row"""
-        sql = """
-            SELECT *
-            FROM employees
-        """
-
-        rows = CURSOR.execute(sql).fetchall()
-
-        return [cls.instance_from_db(row) for row in rows]
+    def get_all(cls, session):
+        return session.query(cls).all()
 
     @classmethod
-    def find_by_id(cls, id):
-        """Return Employee object corresponding to the table row matching the specified primary key"""
-        sql = """
-            SELECT *
-            FROM employees
-            WHERE id = ?
-        """
-
-        row = CURSOR.execute(sql, (id,)).fetchone()
-        return cls.instance_from_db(row) if row else None
-
+    def find_by_id(cls, session, employee_id):
+        employee = session.query(cls).filter_by(id=employee_id).first()
+        if employee is None:
+            raise ValueError("Employee not found")
+        return employee
+    
     @classmethod
     def find_by_name(cls, name):
         """Return Employee object corresponding to first table row matching specified name"""
@@ -186,5 +193,16 @@ class Employee:
         return cls.instance_from_db(row) if row else None
 
     def reviews(self):
-        """Return list of reviews associated with current employee"""
-        pass
+     from review import Review  # Avoid circular import
+    
+    # Fetch all reviews for this employee
+     CURSOR.execute("SELECT * FROM reviews WHERE employee_id = ?", (self.id,))
+     review_rows = CURSOR.fetchall()
+     print("Fetched reviews:", review_rows)  # Debug statement
+    
+    # Create Review instances
+     if review_rows:
+        review_instances = [Review.instance_from_db(row) for row in review_rows]
+        return review_instances
+     return []
+

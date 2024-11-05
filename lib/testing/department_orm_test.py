@@ -1,6 +1,11 @@
 from __init__ import CONN, CURSOR
 from department import Department
 import pytest
+import unittest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from employee import Employee  # Ensure the import is correct
+
 
 
 class TestDepartment:
@@ -220,11 +225,10 @@ class TestDepartment:
 
         Employee.create_table()
         employee1 = Employee.create("Raha", "Accountant", department1.id)
-        employee2 = Employee.create(
-            "Tal", "Senior Accountant", department1.id)
-        employee3 = Employee.create("Amir", "Manager", department2.id)
+        employee2 = Employee.create("Tal", "Senior Accountant", department2.id)
 
         employees = department1.employees()
+        print("Employees for department1:", employees)
         assert (len(employees) == 2)
         assert ((employees[0].id, employees[0].name, employees[0].job_title, employees[0].department_id) ==
                 (employee1.id, employee1.name, employee1.job_title, employee1.department_id))
